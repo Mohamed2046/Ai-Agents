@@ -1,0 +1,454 @@
+{
+  "name": "Dr. Tooth — Report Agent v3 (call center)",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "22fd8399-8499-4fcc-b026-3961c6dcc710",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "a4140802-2e87-4f7b-83e3-4813a6aefc86",
+        "responseMode": "responseNode",
+        "options": {
+          "rawBody": true
+        }
+      },
+      "id": "12143523-d8d1-46eb-99ee-d0c5c3bcbbd1",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        192
+      ],
+      "webhookId": "a4140802-2e87-4f7b-83e3-4813a6aefc86"
+    },
+    {
+      "parameters": {
+        "operation": "binaryToPropery",
+        "binaryPropertyName": "file",
+        "destinationKey": "pdf_base64",
+        "options": {}
+      },
+      "id": "4088fe0f-f448-436b-ac45-789c1ff978a6",
+      "name": "Extract from File",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        208,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first().json;\nconst reportTitle = item.report_title ?? 'تقرير PDF';\nconst reportType  = item.report_type  ?? 'تحليل شامل';\nconst pdfBase64   = item.pdf_base64   ?? '';\nconst LOGO_URL = 'https://i.ibb.co/bg5sQWdC/Picture11.png';\nconst systemPrompt = 'أنت مصمم تقارير احترافي لعيادة Dr. Tooth Clinic.\\nاستخرج كل البيانات من الـ PDF بدون استثناء. لا هلوسة — فقط ما هو موجود في الـ PDF.\\nلا تضيف ملاحظات أو توصيات أو تحليل من عندك — اكتفِ بالبيانات الموجودة في الـ PDF فقط.\\nملاحظة: استخدم كلمة \"مراجعين\" بدلاً من \"مرضى\" في كل مكان في التقرير.\\n\\n1. اللوجو أول شيء — بانر كامل العرض من أول الصفحة لآخرها:\\n<div style=\"width:100%;margin:0;padding:0;background:#0D1B2A;text-align:center;line-height:0;\"><img src=\"' + LOGO_URL + '\" style=\"width:100%;height:auto;display:block;object-fit:cover;\"></div>\\nاللوجو لازم يمتد من الحافة اليمنى للحافة اليسرى بدون أي margin أو padding — عرض كامل 100%\\nتأكد إن body و html فيهم margin:0 و padding:0\\n\\n2. الهيدر: background:#0D1B2A — عنوان + \"تقرير شهر [الشهر] - [الفرع]\" فقط بدون أي نص إضافي مثل \"تقرير PDF\" أو أي زرار\\n\\n3. الخط: Cairo من Google Fonts\\n\\n4. KPIs — مهم جداً: استخرج كل KPI موجود في الـ PDF بدون استثناء ولا نقصان. كل رقم أو نسبة موجودة في الـ PDF لازم تظهر. اعرضها كبطاقات في صف واحد (flex-wrap:wrap) — كل بطاقة: خلفية بيضاء، border-radius:12px، shadow خفيف، padding:20px، min-width:200px. العنوان فوق بخط 14px رمادي والرقم تحته بخط 38px font-weight:900 لون #0A2E3E. لو في 4 KPIs أو أقل اعرضهم في صف واحد. لو أكتر اعرضهم في صفين.\\n\\n5. لا تضيف جدول فواتير — اعرض البيانات في الشارتات فقط\\n\\n6. ثلاثة شارتات أعمدة أفقية (لو البيانات موجودة في الـ PDF):\\nالشارتات: المواعيد — الفواتير — فتح الملفات\\nكل شارت بلون مختلف: المواعيد (#0D1B2A) — الفواتير (#0d9e6e) — فتح الملفات (#1a6b8a)\\nكل شارت يعرض كل المنسقين بدون استثناء\\nكل شارت داخل div منفصل بعرض 100% وخلفية #f8f9fa وborder-radius:12px وpadding:20px وmargin-bottom:20px\\nعنوان الشارت بخط Cairo عريض وحجم 18px\\nشكل كل صف بالضبط:\\n<div style=\"display:flex;align-items:center;gap:12px;margin-bottom:8px;direction:rtl;\"><span style=\"min-width:160px;font-size:13px;font-weight:600;color:#1a1f2e;text-align:right;white-space:nowrap;\">[اسم المنسق]</span><div style=\"flex:1;height:28px;background:#e9ecef;border-radius:6px;overflow:hidden;\"><div style=\"height:100%;width:[النسبة]%;background:[لون الشارت];border-radius:6px;transition:width 0.5s;\"></div></div><span style=\"min-width:50px;font-size:13px;font-weight:700;color:#1a1f2e;text-align:left;\">[النسبة]%</span></div>\\nالعمود الملون فقط هو اللي يمتلئ بالنسبة — الباقي رمادي فاتح #e9ecef\\nلا تضع أي نص داخل العمود — النسبة تظهر بعد العمود على اليسار فقط\\n\\n7. footer: \"فريق تحليل البيانات قسم التشغيل\" فقط\\n\\n8. أرجع HTML كامل فقط — لا backticks — لا markdown — تأكد من html,body{margin:0;padding:0;}\\n\\nنوع التقرير: ' + reportType + '\\nعنوان التقرير: ' + reportTitle;\nlet messages;\nif (pdfBase64 && pdfBase64.length > 100) {\n  messages = [{ role: 'user', content: [\n    { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: pdfBase64 } },\n    { type: 'text', text: 'استخرج كل البيانات وأنشئ تقرير HTML بعنوان \"' + reportTitle + '\". لا تخترع بيانات. تأكد من استخراج كل KPI بدون نقصان.' }\n  ]}];\n} else {\n  messages = [{ role: 'user', content: 'أنشئ تقرير HTML بعنوان \"' + reportTitle + '\": ' + (item.text_content ?? '') }];\n}\nconst requestBody = {\n  model: 'claude-sonnet-4-5',\n  max_tokens: 8000,\n  system: systemPrompt,\n  messages: messages\n};\nreturn [{ json: { requestBody, report_title: reportTitle, pdf_base64: pdfBase64, system_prompt: systemPrompt } }];"
+      },
+      "id": "0864f09d-daf1-4943-b090-69e70ec41376",
+      "name": "Prepare Generate",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        400,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "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"
+            },
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.requestBody }}",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "id": "d73970bc-68fe-4d1b-8c98-0d0637016483",
+      "name": "Call Claude — Generate",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        624,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const apiRes = $input.first().json;\nconst prepData = $('Prepare Generate').first().json;\nlet html = apiRes.content?.[0]?.text ?? '';\nhtml = html.replace(/```html\\n?/gi,'').replace(/```\\n?/gi,'').trim();\nreturn [{ json: {\n  html_content: html,\n  report_title: prepData.report_title,\n  pdf_base64: prepData.pdf_base64,\n  system_prompt: prepData.system_prompt\n} }];"
+      },
+      "id": "7eb8627f-5cb1-4024-8ac3-5fa3bc7de525",
+      "name": "Process Generate",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        848,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first().json;\nconst requestBody = JSON.stringify({\n  model: 'claude-sonnet-4-5',\n  max_tokens: 300,\n  messages: [{ role: 'user', content: 'راجع هذا التقرير وأجب بـ JSON فقط:\\n{\"complete\": true, \"missing\": []}\\n\\n' + item.html_content.substring(0, 5000) }]\n});\nreturn [{ json: { requestBody, html_content: item.html_content, report_title: item.report_title, pdf_base64: item.pdf_base64, system_prompt: item.system_prompt } }];"
+      },
+      "id": "493af6a7-6077-4abd-b2a0-0a8fd3218a87",
+      "name": "Prepare Review",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1072,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "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"
+            },
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.requestBody }}",
+        "options": {
+          "timeout": 60000
+        }
+      },
+      "id": "06111f65-24d0-473c-8cab-36fc48dbab23",
+      "name": "Call Claude — Review",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1280,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const apiRes = $input.first().json;\nconst prepData = $('Prepare Review').first().json;\nlet reviewText = apiRes.content?.[0]?.text ?? '';\nlet result;\ntry {\n  result = JSON.parse(reviewText.replace(/```json\\n?/gi,'').replace(/```\\n?/gi,'').trim());\n} catch(e) {\n  result = { complete: true, missing: [] };\n}\nreturn [{ json: {\n  is_complete: result.complete,\n  missing: result.missing ?? [],\n  html_content: prepData.html_content,\n  report_title: prepData.report_title,\n  pdf_base64: prepData.pdf_base64,\n  system_prompt: prepData.system_prompt\n} }];"
+      },
+      "id": "7e77174e-6aa4-488d-88d0-1aaff7dc2bcd",
+      "name": "Process Review",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1504,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.is_complete }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              },
+              "id": "542a1b40-754e-4b91-9d46-7a6fd95dd8bc"
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "c42302fe-09cf-42ae-95a1-bbc118908976",
+      "name": "IF — مكتمل؟",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1728,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first().json;\nconst missing = item.missing.join('\\n- ');\nconst requestBody = JSON.stringify({\n  model: 'claude-sonnet-4-5',\n  max_tokens: 8000,\n  system: item.system_prompt,\n  messages: [{ role: 'user', content: [\n    { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: item.pdf_base64 } },\n    { type: 'text', text: 'التقرير ناقص. النواقص:\\n- ' + missing + '\\n\\nأعد إنشاء التقرير كامل مع إصلاح كل النواقص.' }\n  ] }]\n});\nreturn [{ json: { requestBody, report_title: item.report_title } }];"
+      },
+      "id": "bfb65d91-10ef-43d1-9148-fa37b16e8ed3",
+      "name": "Prepare Fix",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1952,
+        352
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "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"
+            },
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.requestBody }}",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "id": "21790daa-7f37-4dd4-9c4c-741533c1634b",
+      "name": "Call Claude — Fix",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2160,
+        352
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const apiRes = $input.first().json;\nconst prepData = $('Prepare Fix').first().json;\nlet html = apiRes.content?.[0]?.text ?? '';\nhtml = html.replace(/```html\\n?/gi,'').replace(/```\\n?/gi,'').trim();\nreturn [{ json: { html_content: html, report_title: prepData.report_title } }];"
+      },
+      "id": "a3d0dbd9-a432-4234-b698-ed805b8e5dc9",
+      "name": "Process Fix",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2384,
+        352
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.html_content }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "text/html; charset=utf-8"
+              },
+              {
+                "name": "Content-Disposition",
+                "value": "attachment; filename=\"{{ $json.report_title }}.html\""
+              }
+            ]
+          }
+        }
+      },
+      "id": "ae32979c-4e33-4b05-af27-ca95096a4f4f",
+      "name": "Respond",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        2832,
+        192
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Prepare Generate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "Prepare Generate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Generate": {
+      "main": [
+        [
+          {
+            "node": "Call Claude — Generate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call Claude — Generate": {
+      "main": [
+        [
+          {
+            "node": "Process Generate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Generate": {
+      "main": [
+        [
+          {
+            "node": "Prepare Review",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Review": {
+      "main": [
+        [
+          {
+            "node": "Call Claude — Review",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call Claude — Review": {
+      "main": [
+        [
+          {
+            "node": "Process Review",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Review": {
+      "main": [
+        [
+          {
+            "node": "IF — مكتمل؟",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF — مكتمل؟": {
+      "main": [
+        [
+          {
+            "node": "Respond",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare Fix",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Fix": {
+      "main": [
+        [
+          {
+            "node": "Call Claude — Fix",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call Claude — Fix": {
+      "main": [
+        [
+          {
+            "node": "Process Fix",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Fix": {
+      "main": [
+        [
+          {
+            "node": "Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "00199d60-6c03-40b0-a9c8-7e10536c1c33",
+  "meta": {
+    "instanceId": "000f5568fc844ca14a3e0356cf1dd7350c9cd31c2996c3d85500a140eb7fa85a"
+  },
+  "id": "fmIhp6XfmmQRrih4",
+  "tags": []
+}
